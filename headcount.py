@@ -1,9 +1,11 @@
 import cx_Oracle
 import datetime
+import email
 import jinja2
 import logging
 import os
 import pathlib
+import smtplib
 import sys
 
 from typing import Dict, List, Optional
@@ -67,13 +69,18 @@ class Settings:
             self.check_date = datetime.date.today()
         else:
             self.check_date = datetime.datetime.strptime(env_check_date, '%Y-%m-%d').date()
+        self.aws_ses_configuration_set = os.getenv('AWS_SES_CONFIGURATION_SET')
         self.db_host = os.getenv('DB_HOST')
         self.db_service = os.getenv('DB_SERVICE')
         self.db_password = os.getenv('DB_PASSWORD')
         self.db_username = os.getenv('DB_USERNAME')
         self.log_format = os.getenv('LOG_FORMAT', '%(levelname)s [%(name)s] %(message)s')
         self.log_level = os.getenv('LOG_LEVEL', 'INFO')
-        self.report_path = pathlib.Path(os.getenv('REPORT_PATH', '/reports')).resolve()
+        self.report_recipients = os.getenv('REPORT_RECIPIENTS', '').split()
+        self.smtp_from = os.getenv('SMTP_FROM')
+        self.smtp_host = os.getenv('SMTP_HOST')
+        self.smtp_username = os.getenv('SMTP_USERNAME')
+        self.smtp_password = os.getenv('SMTP_PASSWORD')
         self.template_path = os.getenv('TEMPLATE_PATH', '/headcount/templates')
         self.version = os.getenv('APP_VERSION', 'unknown')
 
@@ -114,6 +121,25 @@ def get_changes(settings: Settings) -> List[Dict]:
     return results
 
 
+def send_email(settings, subject, body) -> bool:
+    """Send an email. Return True if successful, False if not."""
+    log.warning(f'Sending email to {settings.report_recipients}')
+    msg = email.message.EmailMessage()
+    msg['X-SES-CONFIGURATION-SET'] = settings.aws_ses_configuration_set
+    msg['Subject'] = subject
+    msg['From'] = settings.smtp_from
+    msg['To'] = settings.report_recipients
+    msg.set_content(body)
+    with smtplib.SMTP_SSL(host=settings.smtp_host) as s:
+        s.login(user=settings.smtp_username, password=settings.smtp_password)
+        try:
+            s.send_message(msg)
+        except smtplib.SMTPRecipientsRefused as e:
+            log.error(f'{e}')
+            return False
+    return True
+
+
 def main():
     settings = Settings()
     logging.basicConfig(format=settings.log_format, level='DEBUG', stream=sys.stdout)
@@ -126,14 +152,11 @@ def main():
     log.info(f'Getting changes for {settings.check_date}')
     changes = get_changes(settings)
     log.debug(changes)
-    jinja_env = jinja2.Environment(trim_blocks=True, lstrip_blocks=True,
-                                   loader=jinja2.FileSystemLoader(settings.template_path))
+    loader = jinja2.FileSystemLoader(settings.template_path)
+    jinja_env = jinja2.Environment(trim_blocks=True, lstrip_blocks=True, loader=loader)
     template = jinja_env.get_template('changes-report.jinja2')
     report = template.render(settings=settings, changes=changes)
-    report_file = settings.report_path / f'{settings.check_date}.txt'
-    log.info(f'Writing report to {report_file}')
-    with report_file.open('w') as f:
-        f.write(report)
+    send_email(settings, f'Organizational changes for {settings.check_date}', report)
     log.info(f'Duration: {datetime.datetime.utcnow() - start}')
 
 
