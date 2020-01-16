@@ -8,7 +8,7 @@ RUN /usr/bin/yum --assumeyes update \
  && /usr/bin/yum --verbose clean all \
  && /usr/bin/python3 -m pip install --no-cache-dir --requirement /headcount/requirements.txt
 
-ENV APP_VERSION="2020.1" \
+ENV APP_VERSION="2020.2" \
     LD_LIBRARY_PATH="/usr/lib/oracle/18.3/client64/lib" \
     PYTHONUNBUFFERED="1" \
     TZ="Etc/UTC"
