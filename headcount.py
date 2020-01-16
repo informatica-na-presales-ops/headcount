@@ -1,3 +1,4 @@
+import apscheduler.schedulers.blocking
 import cx_Oracle
 import datetime
 import email
@@ -64,11 +65,6 @@ class Database:
 
 class Settings:
     def __init__(self):
-        env_check_date = os.getenv('CHECK_DATE')
-        if env_check_date is None:
-            self.check_date = datetime.date.today()
-        else:
-            self.check_date = datetime.datetime.strptime(env_check_date, '%Y-%m-%d').date()
         self.aws_ses_configuration_set = os.getenv('AWS_SES_CONFIGURATION_SET')
         self.db_host = os.getenv('DB_HOST')
         self.db_service = os.getenv('DB_SERVICE')
@@ -89,12 +85,12 @@ class Settings:
         return Database(self)
 
 
-def get_changes(settings: Settings) -> List[Dict]:
-    old_day = settings.check_date - datetime.timedelta(days=1)
-    old_dict = {r.get('employee_id'): r for r in settings.db.get_data(old_day)}
+def get_changes(db: Database) -> List[Dict]:
+    old_day = datetime.date.today() - datetime.timedelta(days=1)
+    old_dict = {r.get('employee_id'): r for r in db.get_data(old_day)}
     log.debug(f'Number of old records: {len(old_dict)}')
     results = []
-    for new in settings.db.get_data(settings.check_date):
+    for new in db.get_data(datetime.date.today()):
         employee_id = new.get('employee_id')
         log.debug(f'Checking {employee_id}')
         old = old_dict.get(employee_id)
@@ -140,6 +136,20 @@ def send_email(settings, subject, body) -> bool:
     return True
 
 
+def main_job(settings: Settings):
+    start = datetime.datetime.utcnow()
+    check_date = datetime.date.today()
+    log.info(f'Getting changes for {check_date}')
+    changes = get_changes(settings.db)
+    log.debug(changes)
+    loader = jinja2.FileSystemLoader(settings.template_path)
+    jinja_env = jinja2.Environment(trim_blocks=True, lstrip_blocks=True, loader=loader)
+    template = jinja_env.get_template('changes-report.jinja2')
+    report = template.render(check_date=check_date, changes=changes)
+    send_email(settings, f'Organizational changes for {check_date}', report)
+    log.info(f'Duration: {datetime.datetime.utcnow() - start}')
+
+
 def main():
     settings = Settings()
     logging.basicConfig(format=settings.log_format, level='DEBUG', stream=sys.stdout)
@@ -148,16 +158,9 @@ def main():
         log.debug(f'Changing log level to {settings.log_level}')
     logging.getLogger().setLevel(settings.log_level)
 
-    start = datetime.datetime.utcnow()
-    log.info(f'Getting changes for {settings.check_date}')
-    changes = get_changes(settings)
-    log.debug(changes)
-    loader = jinja2.FileSystemLoader(settings.template_path)
-    jinja_env = jinja2.Environment(trim_blocks=True, lstrip_blocks=True, loader=loader)
-    template = jinja_env.get_template('changes-report.jinja2')
-    report = template.render(settings=settings, changes=changes)
-    send_email(settings, f'Organizational changes for {settings.check_date}', report)
-    log.info(f'Duration: {datetime.datetime.utcnow() - start}')
+    scheduler = apscheduler.schedulers.blocking.BlockingScheduler()
+    scheduler.add_job(main_job, 'cron', hour=6, args=[settings])
+    scheduler.start()
 
 
 if __name__ == '__main__':
