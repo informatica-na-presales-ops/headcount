@@ -5,7 +5,7 @@ import email
 import jinja2
 import logging
 import os
-import pathlib
+import signal
 import smtplib
 import sys
 
@@ -160,8 +160,14 @@ def main():
 
     scheduler = apscheduler.schedulers.blocking.BlockingScheduler()
     scheduler.add_job(main_job, 'cron', hour=6, args=[settings])
+
     scheduler.start()
 
 
+def handle_sigterm(_signal, _frame):
+    sys.exit()
+
+
 if __name__ == '__main__':
+    signal.signal(signal.SIGTERM, handle_sigterm)
     main()
