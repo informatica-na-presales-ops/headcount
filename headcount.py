@@ -73,7 +73,7 @@ class Settings:
         self.db_username = os.getenv('DB_USERNAME')
         self.log_format = os.getenv('LOG_FORMAT', '%(levelname)s [%(name)s] %(message)s')
         self.log_level = os.getenv('LOG_LEVEL', 'INFO')
-        self.report_path = pathlib.Path(os.getenv('REPORT_PATH', '/headcount/reports')).resolve()
+        self.report_path = pathlib.Path(os.getenv('REPORT_PATH', '/reports')).resolve()
         self.template_path = os.getenv('TEMPLATE_PATH', '/headcount/templates')
         self.version = os.getenv('APP_VERSION', 'unknown')
 
