@@ -31,10 +31,6 @@ If you are sending email with Amazon SES, you can specify a configuration set by
 Specify report recipients with the environment variable `REPORT_RECIPIENTS`. Separate multiple email addresses with a
 space.
 
-### Report date
+### Time zone
 
-By default, the tool will report on organizational changes for the current day. If you want to report on a different
-day, set the environment variable `CHECK_DATE` to an [ISO 8601][a] date, e.g. `2020-01-16`.
-
-[a]: https://www.iso.org/iso-8601-date-and-time-format.html
-
+Once started, the tool will wait until 06:00 in the time zone specified by the `TZ` environment variable, then run.
