@@ -4,3 +4,4 @@ services:
   headcount:
     image: docker.pkg.github.com/informatica-na-presales-ops/headcount/headcount
     build: .
+    init: true
