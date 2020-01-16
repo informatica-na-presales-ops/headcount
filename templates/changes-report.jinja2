@@ -1,0 +1,32 @@
+The following employee changes happened on {{ settings.check_date }}
+
+# New employees
+
+{% for r in changes if r.result == 'added' %}
+{{ r.data.employee_id }} {{ r.data.employee_name }}
+Business title: {{ r.data.business_title }}
+Worker status: {{ r.data.worker_status }}
+Employee type: {{ r.data.employee_type }}
+Job code: {{ r.data.job_code }}
+Job title: {{ r.data.job_title }}
+Job family: {{ r.data.job_family }}
+Cost center: {{ r.data.cost_center }}
+Manager: {{ r.data.manager }}
+Management level: {{ r.data.management_level }}
+Primary work email: {{ r.email_primary_work }}
+
+{% else %}
+No new employees
+{% endfor %}
+
+# Changed employees
+
+{% for r in changes if r.result == 'changed' %}
+{{ r.data.employee_id }} {{ r.data.employee_name }}
+{% for change in r.changes %}
+{{ change.field }}: {{ change.old }} -> {{ change.new }}
+{% endfor %}
+
+{% else %}
+No changed employees
+{% endfor %}
