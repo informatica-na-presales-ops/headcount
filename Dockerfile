@@ -10,7 +10,8 @@ RUN /usr/bin/yum --assumeyes update \
 
 ENV APP_VERSION="2020.1" \
     LD_LIBRARY_PATH="/usr/lib/oracle/18.3/client64/lib" \
-    PYTHONUNBUFFERED="1"
+    PYTHONUNBUFFERED="1" \
+    TZ="Etc/UTC"
 
 COPY . /headcount
 
