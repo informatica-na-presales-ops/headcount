@@ -73,6 +73,7 @@ class Settings:
         self.log_format = os.getenv('LOG_FORMAT', '%(levelname)s [%(name)s] %(message)s')
         self.log_level = os.getenv('LOG_LEVEL', 'INFO')
         self.report_recipients = os.getenv('REPORT_RECIPIENTS', '').split()
+        self.run_hour = int(os.getenv('RUN_HOUR', '8'))
         self.smtp_from = os.getenv('SMTP_FROM')
         self.smtp_host = os.getenv('SMTP_HOST')
         self.smtp_username = os.getenv('SMTP_USERNAME')
@@ -159,7 +160,7 @@ def main():
     logging.getLogger().setLevel(settings.log_level)
 
     scheduler = apscheduler.schedulers.blocking.BlockingScheduler()
-    scheduler.add_job(main_job, 'cron', hour=6, args=[settings])
+    scheduler.add_job(main_job, 'cron', hour=settings.run_hour, args=[settings])
 
     scheduler.start()
 

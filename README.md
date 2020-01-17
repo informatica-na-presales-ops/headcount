@@ -30,7 +30,3 @@ If you are sending email with Amazon SES, you can specify a configuration set by
 
 Specify report recipients with the environment variable `REPORT_RECIPIENTS`. Separate multiple email addresses with a
 space.
-
-### Time zone
-
-Once started, the tool will wait until 06:00 in the time zone specified by the `TZ` environment variable, then run.
