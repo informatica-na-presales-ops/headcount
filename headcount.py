@@ -44,16 +44,19 @@ class Database:
     def get_data(self, day: datetime.date) -> List[Dict]:
         # This query is complicated because sometimes there are multiple records for a single employee on a single day.
         # For example, an employee can be both a terminated contractor and an active regular employee on the same day.
+        # Calls to CAST_TO_RAW help with text encoding problems.
         sql = '''
             WITH e AS (
-                SELECT EMPLOYEE_ID, UTL_RAW.CAST_TO_RAW(EMPLOYEE_NAME) EMPLOYEE_NAME_RAW, BUSINESS_TITLE, WORKER_STATUS,
-                    EMPLOYEE_TYPE, JOB_CODE, JOB_TITLE, JOB_FAMILY, COST_CENTER, MANAGER, MANAGEMENT_LEVEL,
-                    EMAIL_PRIMARY_WORK, ROW_NUMBER() OVER (PARTITION BY EMPLOYEE_ID ORDER BY HIRE_DATE DESC) JOB_RANK
+                SELECT EMPLOYEE_ID, BUSINESS_TITLE, WORKER_STATUS, EMPLOYEE_TYPE, JOB_CODE, JOB_TITLE, JOB_FAMILY,
+                    COST_CENTER, MANAGEMENT_LEVEL, EMAIL_PRIMARY_WORK,
+                    UTL_RAW.CAST_TO_RAW(EMPLOYEE_NAME) EMPLOYEE_NAME_RAW,
+                    UTL_RAW.CAST_TO_RAW(MANAGER) MANAGER_RAW,
+                    ROW_NUMBER() OVER (PARTITION BY EMPLOYEE_ID ORDER BY HIRE_DATE DESC) JOB_RANK
                 FROM SALES_DM.V_WD_PUBLIC_HC_TERM_COMBINED
                 WHERE SNAP_DATE = :snap_date
             )
-            SELECT EMPLOYEE_ID, EMPLOYEE_NAME_RAW, BUSINESS_TITLE, WORKER_STATUS, EMPLOYEE_TYPE, JOB_CODE, JOB_TITLE,
-                JOB_FAMILY, COST_CENTER, MANAGER, MANAGEMENT_LEVEL, EMAIL_PRIMARY_WORK
+            SELECT EMPLOYEE_ID, BUSINESS_TITLE, WORKER_STATUS, EMPLOYEE_TYPE, JOB_CODE, JOB_TITLE, JOB_FAMILY,
+                COST_CENTER, MANAGEMENT_LEVEL, EMAIL_PRIMARY_WORK, EMPLOYEE_NAME_RAW, MANAGER_RAW
             FROM e
             WHERE JOB_RANK = 1
         '''
@@ -62,7 +65,10 @@ class Database:
         }
         result = self.q(sql, params)
         for r in result:
-            r.update({'employee_name': r.get('employee_name_raw').decode()})
+            r.update({
+                'employee_name': r.get('employee_name_raw').decode(),
+                'manager': r.get('manager_raw').decode()
+            })
         return result
 
 
