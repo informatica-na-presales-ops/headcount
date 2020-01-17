@@ -46,13 +46,13 @@ class Database:
         # For example, an employee can be both a terminated contractor and an active regular employee on the same day.
         sql = '''
             WITH e AS (
-                SELECT EMPLOYEE_ID, EMPLOYEE_NAME, BUSINESS_TITLE, WORKER_STATUS, EMPLOYEE_TYPE, JOB_CODE, JOB_TITLE,
-                    JOB_FAMILY, COST_CENTER, MANAGER, MANAGEMENT_LEVEL, EMAIL_PRIMARY_WORK,
-                    ROW_NUMBER() OVER (PARTITION BY EMPLOYEE_ID ORDER BY HIRE_DATE DESC) JOB_RANK
+                SELECT EMPLOYEE_ID, UTL_RAW.CAST_TO_RAW(EMPLOYEE_NAME) EMPLOYEE_NAME_RAW, BUSINESS_TITLE, WORKER_STATUS,
+                    EMPLOYEE_TYPE, JOB_CODE, JOB_TITLE, JOB_FAMILY, COST_CENTER, MANAGER, MANAGEMENT_LEVEL,
+                    EMAIL_PRIMARY_WORK, ROW_NUMBER() OVER (PARTITION BY EMPLOYEE_ID ORDER BY HIRE_DATE DESC) JOB_RANK
                 FROM SALES_DM.V_WD_PUBLIC_HC_TERM_COMBINED
                 WHERE SNAP_DATE = :snap_date
             )
-            SELECT EMPLOYEE_ID, EMPLOYEE_NAME, BUSINESS_TITLE, WORKER_STATUS, EMPLOYEE_TYPE, JOB_CODE, JOB_TITLE,
+            SELECT EMPLOYEE_ID, EMPLOYEE_NAME_RAW, BUSINESS_TITLE, WORKER_STATUS, EMPLOYEE_TYPE, JOB_CODE, JOB_TITLE,
                 JOB_FAMILY, COST_CENTER, MANAGER, MANAGEMENT_LEVEL, EMAIL_PRIMARY_WORK
             FROM e
             WHERE JOB_RANK = 1
@@ -60,7 +60,10 @@ class Database:
         params = {
             'snap_date': day
         }
-        return self.q(sql, params)
+        result = self.q(sql, params)
+        for r in result:
+            r.update({'employee_name': r.get('employee_name_raw').decode()})
+        return result
 
 
 class Settings:
@@ -74,6 +77,7 @@ class Settings:
         self.log_level = os.getenv('LOG_LEVEL', 'INFO')
         self.report_recipients = os.getenv('REPORT_RECIPIENTS', '').split()
         self.run_hour = int(os.getenv('RUN_HOUR', '8'))
+        self.run_immediately = os.getenv('RUN_IMMEDIATELY', 'False').lower() in ('true', '1', 'on', 'yes')
         self.smtp_from = os.getenv('SMTP_FROM')
         self.smtp_host = os.getenv('SMTP_HOST')
         self.smtp_username = os.getenv('SMTP_USERNAME')
@@ -161,6 +165,9 @@ def main():
 
     scheduler = apscheduler.schedulers.blocking.BlockingScheduler()
     scheduler.add_job(main_job, 'cron', hour=settings.run_hour, args=[settings])
+
+    if settings.run_immediately:
+        scheduler.add_job(main_job, args=[settings])
 
     scheduler.start()
 
