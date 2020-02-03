@@ -5,6 +5,7 @@ import email
 import jinja2
 import logging
 import os
+import pathlib
 import signal
 import smtplib
 import sys
@@ -92,7 +93,7 @@ class Settings:
         self.smtp_host = os.getenv('SMTP_HOST')
         self.smtp_username = os.getenv('SMTP_USERNAME')
         self.smtp_password = os.getenv('SMTP_PASSWORD')
-        self.template_path = os.getenv('TEMPLATE_PATH', '/headcount/templates')
+        self.template_path = pathlib.Path(os.getenv('TEMPLATE_PATH', '/headcount/templates'))
         self.version = os.getenv('APP_VERSION', 'unknown')
 
     @property
