@@ -69,11 +69,15 @@ class Database:
         }
         result = self.q(sql, params)
         for r in result:
-            r.update({
-                'employee_name': r.get('employee_name_raw').decode(),
-                'business_title': r.get('business_title_raw').decode(),
-                'manager': r.get('manager_raw').decode()
-            })
+            r['employee_name'] = r.get('employee_name_raw').decode()
+            if r.get('business_title_raw') is None:
+                r['business_title'] = None
+            else:
+                r['business_title'] = r.get('business_title_raw').decode()
+            if r.get('manager_raw') is None:
+                r['manager'] = None
+            else:
+                r['manager'] = r.get('manager_raw').decode()
         return result
 
 
