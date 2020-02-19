@@ -1,32 +1,50 @@
-The following organizational changes happened on {{ check_date }}
+<html lang="en">
 
-# New employees
+<head>
+    <title>Organizational changes for {{ check_date }}</title>
+</head>
+
+<body>
+<p>The following organizational changes happened on {{ check_date }}</p>
+
+<h3>New employees</h3>
 
 {% for r in changes if r.result == 'added' %}
-{{ r.data.employee_id }} {{ r.data.employee_name }}
-Business title: {{ r.data.business_title }}
-Worker status: {{ r.data.worker_status }}
-Employee type: {{ r.data.employee_type }}
-Job code: {{ r.data.job_code }}
-Job title: {{ r.data.job_title }}
-Job family: {{ r.data.job_family }}
-Cost center: {{ r.data.cost_center }}
-Manager: {{ r.data.manager }}
-Management level: {{ r.data.management_level }}
-Primary work email: {{ r.email_primary_work }}
+<div style="border: thin solid black; margin-bottom: 1em; margin-top: 1em; padding: 1em; width: max-content;">
+<h4>{{ r.data.employee_id }} {{ r.data.employee_name }}</h4>
+<p>
+    Business title: {{ r.data.business_title }}<br>
+    Worker status: {{ r.data.worker_status }}<br>
+    Employee type: {{ r.data.employee_type }}<br>
+    Job code: {{ r.data.job_code }}<br>
+    Job title: {{ r.data.job_title }}<br>
+    Job family: {{ r.data.job_family }}<br>
+    Cost center: {{ r.data.cost_center }}<br>
+    Manager: {{ r.data.manager }}<br>
+    Management level: {{ r.data.management_level }}<br>
+    Primary work email: {{ r.email_primary_work }}<br>
+</p>
+</div>
 
 {% else %}
-No new employees
+<p>No new employees</p>
 {% endfor %}
 
-# Changed employees
+<h3>Changed employees</h3>
 
 {% for r in changes if r.result == 'changed' %}
-{{ r.data.employee_id }} {{ r.data.employee_name }}
+<div style="border: thin solid black; margin-bottom: 1em; margin-top: 1em; padding: 1em; width: max-content;">
+<h4>{{ r.data.employee_id }} {{ r.data.employee_name }}<br><small>{{ r.data.cost_center }}</small></h4>
+<p>
 {% for change in r.changes %}
-{{ change.field }}: {{ change.old }} -> {{ change.new }}
+{{ change.field }}: {{ change.old }} -> {{ change.new }}<br>
 {% endfor %}
+</p>
+</div>
 
 {% else %}
-No changed employees
+<p>No changed employees</p>
 {% endfor %}
+
+</body>
+</html>
