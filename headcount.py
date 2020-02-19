@@ -82,6 +82,8 @@ class Database:
 
 
 class Settings:
+    _true_values = ('true', '1', 'on', 'yes')
+
     def __init__(self):
         self.aws_ses_configuration_set = os.getenv('AWS_SES_CONFIGURATION_SET')
         self.db_host = os.getenv('DB_HOST')
@@ -92,7 +94,7 @@ class Settings:
         self.log_level = os.getenv('LOG_LEVEL', 'INFO')
         self.report_recipients = os.getenv('REPORT_RECIPIENTS', '').split()
         self.run_hour = int(os.getenv('RUN_HOUR', '8'))
-        self.run_immediately = os.getenv('RUN_IMMEDIATELY', 'False').lower() in ('true', '1', 'on', 'yes')
+        self.run_and_exit = os.getenv('RUN_AND_EXIT', 'False').lower() in self._true_values
         self.smtp_from = os.getenv('SMTP_FROM')
         self.smtp_host = os.getenv('SMTP_HOST')
         self.smtp_username = os.getenv('SMTP_USERNAME')
@@ -105,12 +107,12 @@ class Settings:
         return Database(self)
 
 
-def get_changes(db: Database) -> List[Dict]:
-    old_day = datetime.date.today() - datetime.timedelta(days=1)
+def get_changes(db: Database, check_date: datetime.date) -> List[Dict]:
+    old_day = check_date - datetime.timedelta(days=1)
     old_dict = {r.get('employee_id'): r for r in db.get_data(old_day)}
     log.debug(f'Number of old records: {len(old_dict)}')
     results = []
-    for new in db.get_data(datetime.date.today()):
+    for new in db.get_data(check_date):
         employee_id = new.get('employee_id')
         log.debug(f'Checking {employee_id}')
         old = old_dict.get(employee_id)
@@ -145,7 +147,7 @@ def send_email(settings, subject, body) -> bool:
     msg['Subject'] = subject
     msg['From'] = settings.smtp_from
     msg['To'] = settings.report_recipients
-    msg.set_content(body)
+    msg.set_content(body, subtype='html')
     with smtplib.SMTP_SSL(host=settings.smtp_host) as s:
         s.login(user=settings.smtp_username, password=settings.smtp_password)
         try:
@@ -156,11 +158,12 @@ def send_email(settings, subject, body) -> bool:
     return True
 
 
-def main_job(settings: Settings):
+def main_job(settings: Settings, check_date: datetime.date = None):
     start = datetime.datetime.utcnow()
-    check_date = datetime.date.today()
+    if check_date is None:
+        check_date = datetime.date.today()
     log.info(f'Getting changes for {check_date}')
-    changes = get_changes(settings.db)
+    changes = get_changes(settings.db, check_date)
     log.debug(changes)
     loader = jinja2.FileSystemLoader(settings.template_path)
     jinja_env = jinja2.Environment(trim_blocks=True, lstrip_blocks=True, loader=loader)
@@ -178,13 +181,13 @@ def main():
         log.debug(f'Changing log level to {settings.log_level}')
     logging.getLogger().setLevel(settings.log_level)
 
-    scheduler = apscheduler.schedulers.blocking.BlockingScheduler()
-    scheduler.add_job(main_job, 'cron', hour=settings.run_hour, args=[settings])
-
-    if settings.run_immediately:
-        scheduler.add_job(main_job, args=[settings])
-
-    scheduler.start()
+    log.info(f'RUN_AND_EXIT: {settings.run_and_exit}')
+    if settings.run_and_exit:
+        main_job(settings)
+    else:
+        scheduler = apscheduler.schedulers.blocking.BlockingScheduler()
+        scheduler.add_job(main_job, 'cron', hour=settings.run_hour, args=[settings])
+        scheduler.start()
 
 
 def handle_sigterm(_signal, _frame):
