@@ -86,6 +86,7 @@ class Settings:
 
     def __init__(self):
         self.aws_ses_configuration_set = os.getenv('AWS_SES_CONFIGURATION_SET')
+        self.custom_date = datetime.datetime.strptime(os.getenv('CUSTOM_DATE', '0001-01-01'), '%Y-%m-%d').date()
         self.db_host = os.getenv('DB_HOST')
         self.db_service = os.getenv('DB_SERVICE')
         self.db_password = os.getenv('DB_PASSWORD')
@@ -183,7 +184,10 @@ def main():
 
     log.info(f'RUN_AND_EXIT: {settings.run_and_exit}')
     if settings.run_and_exit:
-        main_job(settings)
+        check_date = settings.custom_date
+        if check_date.year == 1:
+            check_date = datetime.date.today()
+        main_job(settings, check_date)
     else:
         scheduler = apscheduler.schedulers.blocking.BlockingScheduler()
         scheduler.add_job(main_job, 'cron', hour=settings.run_hour, args=[settings])
