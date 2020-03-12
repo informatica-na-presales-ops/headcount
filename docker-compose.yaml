@@ -5,3 +5,25 @@ services:
     image: docker.pkg.github.com/informatica-na-presales-ops/headcount/headcount
     build: .
     init: true
+    environment:
+      # Details for connecting to the Oracle database
+      DB_HOST: db_host
+      DB_SERVICE: db_service
+      DB_USERNAME: db_username
+      DB_PASSWORD: db_password
+
+      # Email address to send reports to
+      REPORT_RECIPIENTS: me@example.com
+
+      # Details for sending email
+      AWS_SES_CONFIGURATION_SET: bounces-and-complaints
+      SMTP_FROM: headcount@example.com
+      SMTP_HOST: smtp_host
+      SMTP_PASSWORD: smtp_password
+      SMTP_USERNAME: smtp_username
+
+      # When to run the report
+      TZ: America/Chicago
+      RUN_HOUR: 8
+      # If RUN_AND_EXIT is 'True', the report will run immediately and then exit
+      RUN_AND_EXIT: 'False'
