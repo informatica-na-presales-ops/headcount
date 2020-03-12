@@ -47,22 +47,22 @@ class Database:
         # For example, an employee can be both a terminated contractor and an active regular employee on the same day.
         # Calls to CAST_TO_RAW help with text encoding problems.
         sql = '''
-            WITH E AS (
-                SELECT
-                    EMPLOYEE_ID, WORKER_STATUS, EMPLOYEE_TYPE, JOB_CODE, JOB_TITLE, JOB_FAMILY, COST_CENTER,
-                    MANAGEMENT_LEVEL, EMAIL_PRIMARY_WORK,
-                    UTL_RAW.CAST_TO_RAW(EMPLOYEE_NAME) EMPLOYEE_NAME_RAW,
-                    UTL_RAW.CAST_TO_RAW(BUSINESS_TITLE) BUSINESS_TITLE_RAW,
-                    UTL_RAW.CAST_TO_RAW(MANAGER) MANAGER_RAW,
-                    ROW_NUMBER() OVER (PARTITION BY EMPLOYEE_ID ORDER BY HIRE_DATE DESC) JOB_RANK
-                FROM SALES_DM.V_WD_PUBLIC_HC_TERM_COMBINED
-                WHERE SNAP_DATE = :snap_date
+            with e as (
+                select
+                    employee_id, worker_status, employee_type, job_code, job_title, job_family, cost_center,
+                    management_level, email_primary_work,
+                    utl_raw.cast_to_raw(employee_name) employee_name_raw,
+                    utl_raw.cast_to_raw(business_title) business_title_raw,
+                    utl_raw.cast_to_raw(manager) manager_raw,
+                    row_number() over (partition by employee_id order by hire_date desc) job_rank
+                from sales_dm.v_wd_public_hc_term_combined
+                where snap_date = :snap_date
             )
-            SELECT
-                EMPLOYEE_ID, WORKER_STATUS, EMPLOYEE_TYPE, JOB_CODE, JOB_TITLE, JOB_FAMILY, COST_CENTER,
-                MANAGEMENT_LEVEL, EMAIL_PRIMARY_WORK, EMPLOYEE_NAME_RAW, BUSINESS_TITLE_RAW, MANAGER_RAW
-            FROM E
-            WHERE JOB_RANK = 1
+            select
+                employee_id, worker_status, employee_type, job_code, job_title, job_family, cost_center,
+                management_level, email_primary_work, employee_name_raw, business_title_raw, manager_raw
+            from e
+            where job_rank = 1
         '''
         params = {
             'snap_date': day
