@@ -49,11 +49,18 @@ class Database:
         sql = '''
             with e as (
                 select
-                    employee_id, worker_status, employee_type, job_code, job_title, job_family, cost_center,
-                    management_level, email_primary_work,
-                    utl_raw.cast_to_raw(employee_name) employee_name_raw,
                     utl_raw.cast_to_raw(business_title) business_title_raw,
+                    utl_raw.cast_to_raw(cost_center) cost_center_raw,
+                    email_primary_work,
+                    employee_id,
+                    utl_raw.cast_to_raw(employee_name) employee_name_raw,
+                    employee_type,
+                    job_code,
+                    job_family,
+                    job_title,
+                    management_level,
                     utl_raw.cast_to_raw(manager) manager_raw,
+                    worker_status,
                     row_number() over (partition by employee_id order by hire_date desc) job_rank
                 from sales_dm.v_wd_public_hc_term_combined
                 where snap_date = :snap_date
@@ -69,15 +76,11 @@ class Database:
         }
         result = self.q(sql, params)
         for r in result:
-            r['employee_name'] = r.get('employee_name_raw').decode()
-            if r.get('business_title_raw') is None:
-                r['business_title'] = None
-            else:
-                r['business_title'] = r.get('business_title_raw').decode()
-            if r.get('manager_raw') is None:
-                r['manager'] = None
-            else:
-                r['manager'] = r.get('manager_raw').decode()
+            for raw_field in ('business_title', 'cost_center', 'employee_name', 'manager'):
+                if r.get(f'{raw_field}_raw') is None:
+                    r.update({raw_field: None})
+                else:
+                    r.update({raw_field: r.get(f'{raw_field}_raw').decode()})
         return result
 
 
