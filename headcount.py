@@ -66,8 +66,8 @@ class Database:
                 where snap_date = :snap_date
             )
             select
-                employee_id, worker_status, employee_type, job_code, job_title, job_family, cost_center,
-                management_level, email_primary_work, employee_name_raw, business_title_raw, manager_raw
+                business_title_raw, cost_center_raw, email_primary_work, employee_id, employee_name_raw, employee_type,
+                job_code, job_family, job_title, management_level, manager_raw, worker_status
             from e
             where job_rank = 1
         '''
