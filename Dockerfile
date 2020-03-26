@@ -1,19 +1,10 @@
-FROM oraclelinux:7.7
+FROM python:3.8.2-alpine3.11
 
 COPY requirements.txt /headcount/requirements.txt
 
-RUN /usr/bin/yum --assumeyes update \
- && /usr/bin/yum --assumeyes install oracle-release-el7 python3 \
- && /usr/bin/yum --assumeyes install oracle-instantclient18.3-basic \
- && /usr/bin/yum --verbose clean all \
- && /usr/bin/python3 -m pip install --no-cache-dir --requirement /headcount/requirements.txt
-
-ENV APP_VERSION="2020.9" \
-    LD_LIBRARY_PATH="/usr/lib/oracle/18.3/client64/lib" \
-    PYTHONUNBUFFERED="1" \
-    TZ="Etc/UTC"
-
-COPY . /headcount
-
-ENTRYPOINT ["/usr/bin/python3"]
-CMD ["/headcount/headcount.py"]
+RUN /usr/bin/wget https://download.microsoft.com/download/e/4/e/e4e67866-dffd-428c-aac7-8d28ddafb39b/msodbcsql17_17.5.2.1-1_amd64.apk https://download.microsoft.com/download/e/4/e/e4e67866-dffd-428c-aac7-8d28ddafb39b/mssql-tools_17.5.2.1-1_amd64.apk \
+ && /sbin/apk add --allow-untrusted --no-cache /msodbcsql17_17.5.2.1-1_amd64.apk /mssql-tools_17.5.2.1-1_amd64.apk < /usr/bin/yes \
+ && /bin/rm /msodbcsql17_17.5.2.1-1_amd64.apk /mssql-tools_17.5.2.1-1_amd64.apk \
+ && /sbin/apk add --no-cache --virtual .deps g++ gcc unixodbc-dev \
+ && /usr/local/bin/pip install --no-cache-dir --requirement /headcount/requirements.txt \
+ && /sbin/apk del --no-cache .deps
