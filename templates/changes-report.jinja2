@@ -10,7 +10,6 @@
 <h3>New employees</h3>
 
 {% for r in changes if r.result == 'added' %}
-<div style="border: thin solid black; margin-bottom: 1em; margin-top: 1em; padding: 1em; width: max-content;">
 <h4>{{ r.data.employee_id }} {{ r.data.employee_name }}</h4>
 <p>
     Business title: {{ r.data.business_title }}<br>
@@ -24,7 +23,6 @@
     Management level: {{ r.data.management_level }}<br>
     Primary work email: {{ r.email_primary_work }}<br>
 </p>
-</div>
 
 {% else %}
 <p>No new employees</p>
@@ -33,14 +31,12 @@
 <h3>Changed employees</h3>
 
 {% for r in changes if r.result == 'changed' %}
-<div style="border: thin solid black; margin-bottom: 1em; margin-top: 1em; padding: 1em; width: max-content;">
 <h4>{{ r.data.employee_id }} {{ r.data.employee_name }}<br><small>{{ r.data.cost_center }}</small></h4>
 <p>
 {% for change in r.changes %}
-{{ change.field }}: {{ change.old }} -> {{ change.new }}<br>
+{{ change.field }}: {{ change.old }} &rarr; {{ change.new }}<br>
 {% endfor %}
 </p>
-</div>
 
 {% else %}
 <p>No changed employees</p>
