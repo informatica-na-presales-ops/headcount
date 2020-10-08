@@ -1,9 +1,8 @@
-version: '3.7'
+version: '3.8'
 
 services:
   headcount:
-    image: docker.pkg.github.com/informatica-na-presales-ops/headcount/headcount
-    build: .
+    image: ghcr.io/informatica-na-presales-ops/headcount
     init: true
     environment:
       # Details for connecting to the Oracle database
