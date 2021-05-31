@@ -1,4 +1,4 @@
-FROM oraclelinux:8.3
+FROM oraclelinux:8.4
 
 COPY requirements.txt /headcount/requirements.txt
 
